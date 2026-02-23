@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>پنل مدیریت لیدربورد</title>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --accent-cyan: #22d3ee;
+            --accent-orange: #fb923c;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --neon-shadow: 0 0 15px rgba(34, 211, 238, 0.4);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* --- Auth Overlay --- */
+        #auth-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        #auth-overlay.hidden {
+            transform: translateY(-100%);
+        }
+
+        .pin-container {
+            text-align: center;
+            padding: 2rem;
+            background: var(--card-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: var(--neon-shadow);
+        }
+
+        .pin-container h2 {
+            font-family: 'Orbitron', sans-serif;
+            margin-bottom: 1.5rem;
+            color: var(--accent-cyan);
+            letter-spacing: 2px;
+        }
+
+        #pin-input {
+            background: rgba(15, 23, 42, 0.8);
+            border: 2px solid var(--accent-cyan);
+            border-radius: 10px;
+            color: white;
+            font-size: 2rem;
+            text-align: center;
+            width: 150px;
+            padding: 0.5rem;
+            letter-spacing: 8px;
+            font-family: 'Orbitron', sans-serif;
+            outline: none;
+            margin-bottom: 1rem;
+        }
+
+        /* --- Main UI --- */
+        #app {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 1rem;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        #app.visible {
+            opacity: 1;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding-top: 1rem;
+        }
+
+        header h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            color: var(--accent-cyan);
+            text-transform: uppercase;
+            text-shadow: 0 0 10px rgba(34, 211, 238, 0.5);
+        }
+
+        .student-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            padding-bottom: 2rem;
+        }
+
+        .student-card {
+            background: var(--card-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 15px;
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            backdrop-filter: blur(5px);
+            animation: slideIn 0.4s ease-out forwards;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(20px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .avatar-wrapper {
+            position: relative;
+        }
+
+        .avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--accent-cyan);
+            box-shadow: 0 0 10px rgba(34, 211, 238, 0.3);
+        }
+
+        .student-info {
+            flex-grow: 1;
+        }
+
+        .student-name {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 0.2rem;
+        }
+
+        .student-score {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--accent-cyan);
+            font-size: 0.9rem;
+        }
+
+        .score-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .points-input {
+            width: 60px;
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            color: white;
+            padding: 0.5rem;
+            text-align: center;
+            font-family: 'Orbitron', sans-serif;
+            outline: none;
+        }
+
+        .points-input:focus {
+            border-color: var(--accent-cyan);
+        }
+
+        .add-btn {
+            background: linear-gradient(135deg, var(--accent-cyan), #0891b2);
+            border: none;
+            border-radius: 8px;
+            color: var(--bg-color);
+            padding: 0.6rem 0.8rem;
+            cursor: pointer;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            box-shadow: 0 4px 10px rgba(34, 211, 238, 0.3);
+        }
+
+        .add-btn:active {
+            transform: scale(0.95);
+        }
+
+        .add-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .loader {
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--bg-color);
+            border-bottom-color: transparent;
+            border-radius: 50%;
+            display: inline-block;
+            animation: rotation 1s linear infinite;
+        }
+
+        @keyframes rotation {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* --- Toast Notifications --- */
+        #toast-container {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            pointer-events: none;
+        }
+
+        .toast {
+            background: rgba(30, 41, 59, 0.95);
+            color: white;
+            padding: 0.8rem 1.5rem;
+            border-radius: 50px;
+            border-left: 4px solid var(--accent-cyan);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            font-size: 0.9rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            animation: toastIn 0.3s ease-out forwards;
+            backdrop-filter: blur(5px);
+        }
+
+        .toast.error {
+            border-left-color: #ef4444;
+        }
+
+        @keyframes toastIn {
+            from { transform: translateY(100px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .toast-out {
+            animation: toastOut 0.3s ease-in forwards !important;
+        }
+
+        @keyframes toastOut {
+            from { transform: translateY(0); opacity: 1; }
+            to { transform: translateY(100px); opacity: 0; }
+        }
+
+        /* RTL adjustments */
+        input[dir="ltr"] {
+            direction: ltr;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Auth Overlay -->
+    <div id="auth-overlay">
+        <div class="pin-container">
+            <h2>ورود اساتید</h2>
+            <input type="password" id="pin-input" maxlength="4" placeholder="••••" inputmode="numeric">
+            <p style="color: var(--text-secondary); font-size: 0.8rem;">لطفاً پین کد را وارد کنید</p>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="app">
+        <header>
+            <h1>پنل مدیریت امتیازات</h1>
+        </header>
+
+        <div id="student-list" class="student-list">
+            <!-- Students will be loaded here -->
+            <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                <i class="fas fa-spinner fa-spin fa-2x"></i>
+                <p style="margin-top: 1rem;">در حال دریافت اطلاعات...</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <!-- Firebase SDK (v9 Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+    <script>
+        // CONFIGURATION
+        const CONFIG = {
+            firebaseUrl: "https://jalase4shanbe-default-rtdb.firebaseio.com/",
+            gasUrl: "https://script.google.com/macros/s/AKfycbzz1ZzJ-7HTYnqfzTTAPmoQMfX8VZiAT8aDqYbNjfREGqXMveuyKNZHDp2yze6a1Ou_Ug/exec",
+            pin: "1403",
+            defaultAvatar: "https://ui-avatars.com/api/?background=22d3ee&color=0f172a&bold=true&name="
+        };
+
+        // Initialize Firebase
+        const firebaseConfig = {
+            databaseURL: CONFIG.firebaseUrl
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const studentsRef = db.ref('students');
+
+        // State
+        let studentsData = {};
+
+        // DOM Elements
+        const authOverlay = document.getElementById('auth-overlay');
+        const pinInput = document.getElementById('pin-input');
+        const appContainer = document.getElementById('app');
+        const studentListContainer = document.getElementById('student-list');
+
+        // Authentication Logic
+        pinInput.addEventListener('input', (e) => {
+            if (e.target.value === CONFIG.pin) {
+                authOverlay.classList.add('hidden');
+                appContainer.classList.add('visible');
+                initApp();
+            } else if (e.target.value.length >= 4) {
+                e.target.value = '';
+                showToast("پین کد اشتباه است!", "error");
+            }
+        });
+
+        // App Initialization
+        async function initApp() {
+            // Check if Firebase has data
+            studentsRef.once('value', async (snapshot) => {
+                if (!snapshot.exists()) {
+                    console.log("Firebase is empty, fetching from GAS...");
+                    await syncFromGAS();
+                } else {
+                    console.log("Firebase has data, listening for updates...");
+                    // No need to fetch from GAS if we already have data in Firebase
+                }
+            });
+
+            // Real-time listener
+            studentsRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    studentsData = data;
+                    renderStudents(data);
+                }
+            });
+        }
+
+        async function syncFromGAS() {
+            try {
+                const response = await fetch(CONFIG.gasUrl);
+                const result = await response.json();
+
+                if (result.status === "success") {
+                    const studentsObj = {};
+                    result.data.forEach(s => {
+                        studentsObj[s.id] = s;
+                    });
+                    await studentsRef.set(studentsObj);
+                    showToast("اطلاعات با موفقیت همگام‌سازی شد");
+                } else {
+                    throw new Error(result.message);
+                }
+            } catch (error) {
+                console.error("GAS Fetch Error:", error);
+                showToast("خطا در دریافت اطلاعات از سرور!", "error");
+            }
+        }
+
+        function renderStudents(data) {
+            // Convert object to array and sort by ID (as per sheet) or Name
+            const list = Object.values(data).sort((a, b) => a.id - b.id);
+
+            studentListContainer.innerHTML = list.map(student => `
+                <div class="student-card" id="student-${student.id}">
+                    <div class="avatar-wrapper">
+                        <img class="avatar" src="${student.photoUrl || (CONFIG.defaultAvatar + encodeURIComponent(student.name))}"
+                             onerror="this.src='${CONFIG.defaultAvatar + encodeURIComponent(student.name)}'"
+                             alt="${student.name}">
+                    </div>
+                    <div class="student-info">
+                        <div class="student-name">${student.name}</div>
+                        <div class="student-score">امتیاز: <span id="score-val-${student.id}">${student.score}</span></div>
+                    </div>
+                    <div class="score-controls">
+                        <input type="number" class="points-input" id="input-${student.id}" min="1" value="10" dir="ltr">
+                        <button class="add-btn" onclick="addPoints(${student.id})">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function addPoints(id) {
+            const input = document.getElementById(`input-${id}`);
+            const btn = document.querySelector(`#student-${id} .add-btn`);
+            const pointsToAdd = parseInt(input.value);
+
+            if (isNaN(pointsToAdd) || pointsToAdd <= 0) {
+                showToast("امتیاز باید مثبت باشد", "error");
+                return;
+            }
+
+            // UI Feedback
+            const originalBtnContent = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loader"></span>';
+
+            const currentScore = studentsData[id].score;
+            const newTotalScore = currentScore + pointsToAdd;
+
+            try {
+                // 1. Update Firebase (Instant TV update)
+                await studentsRef.child(id.toString()).update({
+                    score: newTotalScore
+                });
+
+                showToast(`🔥 ${pointsToAdd}+ امتیاز به ${studentsData[id].name} اضافه شد!`);
+                input.value = "10"; // Reset input
+
+                // 2. Backup to Google Sheets (GAS)
+                updateGAS(id, newTotalScore);
+
+            } catch (error) {
+                console.error("Update error:", error);
+                showToast("خطا در بروزرسانی امتیاز!", "error");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalBtnContent;
+            }
+        }
+
+        async function updateGAS(id, newTotalScore) {
+            try {
+                // Using text/plain to avoid CORS preflight (OPTIONS) as GAS custom headers are limited.
+                // GAS will still receive the JSON string in e.postData.contents.
+                const response = await fetch(CONFIG.gasUrl, {
+                    method: 'POST',
+                    mode: 'cors',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify({
+                        action: "updateScore",
+                        id: id,
+                        newTotalScore: newTotalScore
+                    })
+                });
+
+                const result = await response.json();
+                if (result.status !== "success") {
+                    throw new Error(result.message);
+                }
+                console.log("GAS Updated:", result);
+            } catch (error) {
+                console.error("GAS Update Error:", error);
+                // We don't want to alert the user for background sync errors
+                // if Firebase already updated successfully, but we log it.
+            }
+        }
+
+        function showToast(message, type = "success") {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type === 'error' ? 'error' : ''}`;
+
+            const icon = type === 'error' ? 'fa-circle-exclamation' : 'fa-circle-check';
+            toast.innerHTML = `<i class="fas ${icon}"></i> <span>${message}</span>`;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.add('toast-out');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
