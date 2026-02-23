@@ -319,7 +319,8 @@
             firebaseUrl: "https://jalase4shanbe-default-rtdb.firebaseio.com/",
             gasUrl: "https://script.google.com/macros/s/AKfycbzz1ZzJ-7HTYnqfzTTAPmoQMfX8VZiAT8aDqYbNjfREGqXMveuyKNZHDp2yze6a1Ou_Ug/exec",
             pin: "1403",
-            defaultAvatar: "https://ui-avatars.com/api/?background=22d3ee&color=0f172a&bold=true&name="
+            defaultAvatar: "https://ui-avatars.com/api/?background=22d3ee&color=0f172a&bold=true&name=",
+            accentCyan: "#22d3ee"
         };
 
         // Initialize Firebase
@@ -368,11 +369,34 @@
             studentsRef.on('value', (snapshot) => {
                 const data = snapshot.val();
                 if (data) {
+                // If it's the first time, render everything
+                if (Object.keys(studentsData).length === 0) {
                     studentsData = data;
                     renderStudents(data);
+                } else {
+                    // Otherwise, only update changed students to prevent input wipe-out
+                    Object.keys(data).forEach(id => {
+                        if (!studentsData[id] || studentsData[id].score !== data[id].score) {
+                            updateStudentUI(id, data[id]);
+                        }
+                    });
+                    studentsData = data;
+                }
                 }
             });
         }
+
+    function updateStudentUI(id, student) {
+        const scoreSpan = document.getElementById(`score-val-${id}`);
+        if (scoreSpan) {
+            scoreSpan.innerText = student.score;
+            // Add a small animation effect
+            scoreSpan.parentElement.style.color = CONFIG.accentCyan;
+            setTimeout(() => {
+                scoreSpan.parentElement.style.color = '';
+            }, 1000);
+        }
+    }
 
         async function syncFromGAS() {
             try {
@@ -441,7 +465,8 @@
             try {
                 // 1. Update Firebase (Instant TV update)
                 await studentsRef.child(id.toString()).update({
-                    score: newTotalScore
+                    score: newTotalScore,
+                    lastUpdated: firebase.database.ServerValue.TIMESTAMP
                 });
 
                 showToast(`🔥 ${pointsToAdd}+ امتیاز به ${studentsData[id].name} اضافه شد!`);
@@ -481,8 +506,7 @@
                 console.log("GAS Updated:", result);
             } catch (error) {
                 console.error("GAS Update Error:", error);
-                // We don't want to alert the user for background sync errors
-                // if Firebase already updated successfully, but we log it.
+                showToast("خطا در ذخیره دائمی در گوگل شیت! لطفاً اتصال را چک کنید.", "error");
             }
         }
 
